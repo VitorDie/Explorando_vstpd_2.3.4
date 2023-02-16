@@ -6,4 +6,4 @@
 
   O que ativa a porta 6200 é o sorriso ":)" no final da requisição USER.
 
-  Antes de usar esse exploit, é necessário alterar o ip do alvo no método socket_connect, em "remote.sin_addr.s_addr = inet_addr("192.168.0.120")". Coloque no lugar de "192.168.0.120" o ip do seu alvo.
+  Antes de usar esse exploit, é necessário alterar o ip do alvo na função socket_connect. Em "remote.sin_addr.s_addr = inet_addr("192.168.0.120")", coloque no lugar de "192.168.0.120" o ip do seu alvo.
